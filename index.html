@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="theme-color" content="#0a0710" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>HORDEBOUND — You Are The Horde</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b0712'/%3E%3Cpath d='M32 8c8 0 14 6 14 14 0 6-3 10-3 14 0 7 6 8 6 14 0 5-5 8-9 6-3-2-4-6-8-6s-5 4-8 6c-4 2-9-1-9-6 0-6 6-7 6-14 0-4-3-8-3-14C18 14 24 8 32 8z' fill='%23b98cff'/%3E%3Ccircle cx='26' cy='25' r='3' fill='%23ff5470'/%3E%3Ccircle cx='38' cy='25' r='3' fill='%23ff5470'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="game-shell">
+  <canvas id="game" aria-label="Hordebound game arena"></canvas>
+
+  <!-- ======================= HUD ======================= -->
+  <div id="hud" class="hidden" aria-live="off">
+    <div class="hud-top">
+      <section class="panel horde-panel">
+        <div class="panel-kicker">THE HORDE</div>
+        <div class="horde-count"><span id="horde-count">0</span><span class="horde-cap">/ <b id="horde-cap">55</b></span></div>
+        <div class="horde-sub"><span class="dot"></span> <span id="spawn-rate">1.6</span> spawns / sec</div>
+      </section>
+
+      <section class="panel champion-panel">
+        <div class="champion-head">
+          <span id="champion-num">CHAMPION I</span>
+          <span id="champion-lv" class="champion-lv">LV 1</span>
+        </div>
+        <div id="champion-name" class="champion-name">Sera the Novice</div>
+        <div class="hp-bar champion-hp">
+          <div id="champion-hp-fill" class="hp-fill"></div>
+          <span id="champion-hp-text" class="hp-text">900 / 900</span>
+        </div>
+        <div id="champion-weapons" class="weapon-row"></div>
+      </section>
+
+      <section class="panel run-panel">
+        <div class="run-row"><span class="run-label">RUN</span><span id="run-timer">00:00</span></div>
+        <div class="run-row"><span class="run-label">SLAIN</span><span id="slain-count">0 / 5</span></div>
+        <button id="mute-btn" class="icon-btn" aria-label="Toggle sound" title="Toggle sound">♪</button>
+      </section>
+    </div>
+
+    <div id="toast-layer" class="toast-layer" aria-live="polite"></div>
+
+    <div class="hud-bottom">
+      <section class="panel commander-panel">
+        <div class="panel-kicker">NECROMANCER</div>
+        <div class="hp-bar commander-hp">
+          <div id="commander-hp-fill" class="hp-fill blood"></div>
+          <span id="commander-hp-text" class="hp-text">120 / 120</span>
+        </div>
+        <div class="commander-hint">Stay near the feast. Keep the brood close.</div>
+      </section>
+
+      <section class="xp-panel">
+        <div class="xp-labels">
+          <span>ESSENCE <b>LV <span id="level-num">1</span></b></span>
+          <span id="xp-text">0 / 80</span>
+        </div>
+        <div class="xp-bar"><div id="xp-fill" class="xp-fill"></div></div>
+      </section>
+
+      <button id="surge-btn" class="surge-btn" aria-label="Unleash a surge of minions">
+        <span class="surge-ring"><span id="surge-fill" class="surge-fill"></span></span>
+        <span class="surge-skull">☠</span>
+        <span class="surge-label">SURGE</span>
+        <span class="surge-key">SPACE</span>
+      </button>
+    </div>
+
+    <button id="pause-btn" class="pause-btn" aria-label="Pause game">II</button>
+  </div>
+
+  <!-- ======================= TOUCH ======================= -->
+  <div id="touch-ui" class="touch-ui hidden">
+    <div id="joystick" class="joystick">
+      <div class="joystick-ring"></div>
+      <div id="joystick-knob" class="joystick-knob"></div>
+    </div>
+  </div>
+
+  <!-- ======================= BANNER ======================= -->
+  <div id="banner" class="banner hidden">
+    <div id="banner-kicker" class="banner-kicker"></div>
+    <div id="banner-title" class="banner-title"></div>
+    <div id="banner-sub" class="banner-sub"></div>
+  </div>
+
+  <div id="damage-flash" class="damage-flash"></div>
+
+  <!-- ======================= MENU ======================= -->
+  <div id="menu" class="overlay menu-overlay">
+    <div class="menu-inner">
+      <div class="eyebrow"><span class="eyebrow-line"></span> A REVERSE SURVIVORS <span class="eyebrow-line"></span></div>
+      <h1 class="game-title">HORDE<span>BOUND</span></h1>
+      <p class="tagline">The survivor levels up. The horde does not stop.</p>
+      <p class="menu-desc">You are the swarm. Raise the dead, drown the champions in bodies, and devour five heroes before the Saint of Dawn ascends.</p>
+
+      <div class="menu-grid">
+        <div class="menu-card">
+          <div class="menu-card-icon">☠</div>
+          <div><b>You don't fight.</b><span>You breed. Minions spawn around your necromancer and hunt the champion on their own.</span></div>
+        </div>
+        <div class="menu-card">
+          <div class="menu-card-icon">✦</div>
+          <div><b>They snowball.</b><span>Every minion the champion kills feeds them. Kill them before their build comes online.</span></div>
+        </div>
+        <div class="menu-card">
+          <div class="menu-card-icon">♥</div>
+          <div><b>Your body is fragile.</b><span>Stay near the feast to keep pressure up — but their light can still find you.</span></div>
+        </div>
+      </div>
+
+      <button id="start-btn" class="primary-btn">
+        <span>AWAKEN THE HORDE</span>
+        <small>Enter / Tap</small>
+      </button>
+
+      <div class="controls-line">
+        <span><kbd>WASD</kbd><kbd>↑↓←→</kbd> move</span>
+        <span><kbd>SPACE</kbd> surge</span>
+        <span><kbd>P</kbd> pause</span>
+        <span class="touch-only"><kbd>DRAG</kbd> move</span>
+      </div>
+      <div class="menu-foot">Every champion you kill makes the next one stronger.</div>
+    </div>
+  </div>
+
+  <!-- ======================= LEVEL UP ======================= -->
+  <div id="levelup" class="overlay upgrade-overlay hidden">
+    <div class="upgrade-inner">
+      <div id="upgrade-kicker" class="eyebrow"><span class="eyebrow-line"></span> THE HORDE EVOLVES <span class="eyebrow-line"></span></div>
+      <h2 id="upgrade-title" class="upgrade-title">CHOOSE A MUTATION</h2>
+      <p id="upgrade-sub" class="upgrade-sub">The swarm reshapes itself around your will.</p>
+      <div id="upgrade-cards" class="upgrade-cards"></div>
+      <div class="upgrade-hint">Click a card or press <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></div>
+    </div>
+  </div>
+
+  <!-- ======================= PAUSE ======================= -->
+  <div id="pause" class="overlay pause-overlay hidden">
+    <div class="pause-inner">
+      <div class="eyebrow"><span class="eyebrow-line"></span> THE NIGHT HOLDS ITS BREATH <span class="eyebrow-line"></span></div>
+      <h2>PAUSED</h2>
+      <p>The horde waits for your command.</p>
+      <button id="resume-btn" class="primary-btn small"><span>RESUME</span></button>
+      <button id="restart-btn" class="ghost-btn">RESTART RUN</button>
+      <button id="quit-btn" class="ghost-btn">RETURN TO MENU</button>
+    </div>
+  </div>
+
+  <!-- ======================= END ======================= -->
+  <div id="end" class="overlay end-overlay hidden">
+    <div class="end-inner">
+      <div id="end-kicker" class="eyebrow"><span class="eyebrow-line"></span> THE NIGHT ENDS <span class="eyebrow-line"></span></div>
+      <h2 id="end-title" class="end-title">THE HORDE SCATTERS</h2>
+      <p id="end-sub" class="end-sub">Your necromancer has fallen.</p>
+      <div id="end-stats" class="end-stats"></div>
+      <button id="again-btn" class="primary-btn"><span>RISE AGAIN</span><small>Enter</small></button>
+      <button id="menu-btn" class="ghost-btn">RETURN TO MENU</button>
+    </div>
+  </div>
+
+  <div id="rotate-hint" class="rotate-hint">Turn your device for a wider view</div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
